@@ -1,17 +1,17 @@
 ---
 
-- name: 'Подготовка временного списка компьютеров (вместо hosts).'
+- name: 'Подготовка временного списка компьютеров (вместо hosts):'
   hosts: localhost
   connection: local
   gather_facts: false
 
   tasks:
-    - name: 'Настраиваем временную группу для компьютера {{ desktop_ip }}'
+    - name: 'Настройка временной группы для компьютера {{ desktop_ip }}:'
       ansible.builtin.add_host:
         groups: temp
         hostname: "{{ desktop_ip }}"
 
-- name: 'Основная часть: Установка и настройка xrdp.'
+- name: 'Основная часть: Установка и настройка xrdp"'
   hosts: temp
   gather_facts: true
   become: true
@@ -30,7 +30,7 @@
         libreoffice:
           - libreoffice
 
-# Todo:
+# TODO:
 # - install custom soft (e.g. 1C)
 # - disable screensaver
 # - add users from packetfile
@@ -39,49 +39,49 @@
 
   tasks:
 
-    - name: 'Обновление кэша установщика пакетов'
+    - name: 'Обновление кэша установщика пакетов:'
       ansible.builtin.apt:
         update_cache: true
 
-    - name: 'Обновление установщика пакетов'
-      ansible.builtin.apt:
-        upgrade: dist
+    # - name: 'Обновление установщика пакетов:'
+    #   ansible.builtin.apt:
+    #     upgrade: dist
 
-    - name: 'Установка: Основные пакеты.'
+    - name: 'Установка: Основные пакеты:'
       ansible.builtin.apt:
         name: "{{ packages.apt.common }}"
         state: present
 
-    - name: 'Установка: LibreOffice'
+    - name: 'Установка: LibreOffice:'
       ansible.builtin.apt:
         name: "{{ packages.apt.libreoffice }}"
         state: present
 
-    - name: 'Установка часового пояса'
+    - name: 'Установка часового пояса:'
       community.general.timezone:
-        name: "Europe/Moscow"
+        name: Europe/Moscow
       register: set_timezone
       no_log: false
 
-    - name: "Set test"
+    - name: 'Установка часового пояса (информация):'
       ansible.builtin.debug:
         msg:
           # - "{{ set_timezone }}"
           - "До:    {{ set_timezone.diff.before.name }}"
           - "После: {{ set_timezone.diff.after.name }}"
 
-    - name: 'Передача дополнительного файла с описанием группы sudo'
+    - name: 'Передача дополнительного файла с описанием группы sudo:'
       ansible.builtin.copy:
-        dest: "/etc/sudoers.d/sudo_group"
+        dest: /etc/sudoers.d/sudo_group
         content: |
           %sudo  ALL=(ALL) NOPASSWD: ALL
         owner: root
         group: root
         mode: "0440"
 
-    - name: 'Отключение IPv6'
+    - name: 'Отключение IPv6:'
       ansible.builtin.copy:
-        dest: "/etc/sysctl.d/50-ipv6disable.conf"
+        dest: /etc/sysctl.d/50-ipv6disable.conf
         content: |
           net.ipv6.conf.all.disable_ipv6 = 1
           net.ipv6.conf.default.disable_ipv6 = 1
@@ -89,11 +89,11 @@
         group: root
         mode: "0440"
 
-    - name: 'Исправление ошибки с чёрным экраном при входе'
+    - name: 'Исправление ошибки с чёрным экраном при входе:'
       ansible.builtin.blockinfile:
-        path: "/etc/xrdp/startwm.sh"
+        path: /etc/xrdp/startwm.sh
         block: "{{ startwm_block }}"
-        insertbefore: "test -x /etc/X11/Xsession && exec /etc/X11/Xsession"
+        insertbefore: test -x /etc/X11/Xsession && exec /etc/X11/Xsession
         append_newline: true
       vars:
         startwm_block: |
@@ -103,57 +103,57 @@
     - name: 'Проверка: Отключён ли уже скринсейвер (через /etc/xrdp/reconnectwm.sh)'
       ansible.builtin.lineinfile:
         state: absent
-        path: "/etc/xrdp/reconnectwm.sh"
-        regexp: "^xset s off"
+        path: /etc/xrdp/reconnectwm.sh
+        regexp: ^xset s off
       check_mode: true
       changed_when: false # Строка для журнала выполнения скрипта
       register: check_screensaver
 
-    - name: "ОТЛАДКА"
+    - name: 'Проверка: Отключён ли уже скринсейвер (проверка вывода):'
       ansible.builtin.debug:
         msg: "{{ check_screensaver }}"
 
-    - name: 'Отключение скринсейвера (через /etc/xrdp/reconnectwm.sh)'
+    - name: 'Отключение скринсейвера (через /etc/xrdp/reconnectwm.sh):'
       when: check_screensaver.found == 0
       block:
-        - name: 'Добавление строк для отключения скринсейрвера'
+        - name: 'Добавление строк для отключения скринсейрвера:'
           ansible.builtin.lineinfile:
             state: present
-            dest: "/etc/xrdp/reconnectwm.sh"
+            dest: /etc/xrdp/reconnectwm.sh
             line: |
               xset s off
               xset s noblank
 
-    - name: 'Добавление системного пользователя xrdp в группу ssl-cert'
+    - name: 'Добавление системного пользователя xrdp в группу ssl-cert:'
       ansible.builtin.user:
-        name: "xrdp"
-        groups: "ssl-cert"
+        name: xrdp
+        groups: ssl-cert
         append: true
-      notify: 'Restart xrdp'
+      notify: Restart xrdp
 
     - name: 'Настройка клавиатуры: Установка параметров в /etc/xrdp/xrdp_keyboard.ini'
       community.general.ini_file:
-        path: "/etc/xrdp/xrdp_keyboard.ini"
+        path: /etc/xrdp/xrdp_keyboard.ini
         section: "{{ item.section }}"
         option: "{{ item.option }}"
         value: "{{ item.value }}"
         no_extra_spaces: true
         mode: "0644"
       with_items:
-        - { section: 'default_rdp_layouts', option: 'rdp_layout_us', value: '0x00000409' }
-        - { section: 'default_rdp_layouts', option: 'rdp_layout_ru', value: '0x00000419' }
-        - { section: 'rdp_keyboard_ru', option: 'keyboard_type', value: '4' }
-        - { section: 'rdp_keyboard_ru', option: 'keyboard_subtype', value: '1' }
-        - { section: 'rdp_keyboard_ru', option: 'model', value: 'pc105' }
-        - { section: 'rdp_keyboard_ru', option: 'options', value: 'grp:alt_shift_toggle' }
-        - { section: 'rdp_keyboard_ru', option: 'rdp_layouts', value: 'default_rdp_layouts' }
-        - { section: 'rdp_keyboard_ru', option: 'layouts_map', value: 'layouts_map_ru' }
-        - { section: 'layouts_map_ru', option: 'rdp_layout_us', value: 'us,ru' }
-        - { section: 'layouts_map_ru', option: 'rdp_layout_ru', value: 'us,ru' }
+        - { section: default_rdp_layouts, option: rdp_layout_us, value: 0x00000409 }
+        - { section: default_rdp_layouts, option: rdp_layout_ru, value: 0x00000419 }
+        - { section: rdp_keyboard_ru, option: keyboard_type, value: 4 }
+        - { section: rdp_keyboard_ru, option: keyboard_subtype, value: 1 }
+        - { section: rdp_keyboard_ru, option: model, value: pc105 }
+        - { section: rdp_keyboard_ru, option: options, value: grp:alt_shift_toggle }
+        - { section: rdp_keyboard_ru, option: rdp_layouts, value: default_rdp_layouts }
+        - { section: rdp_keyboard_ru, option: layouts_map, value: layouts_map_ru }
+        - { section: layouts_map_ru, option: rdp_layout_us, value: us,ru }
+        - { section: layouts_map_ru, option: rdp_layout_ru, value: us,ru }
 
     - name: 'Настройка клавиатуры: Изменение "/etc/default/keyboard"'
       ansible.builtin.copy:
-        dest: "/etc/default/keyboard"
+        dest: /etc/default/keyboard
         content: |
           # KEYBOARD CONFIGURATION FILE
 
@@ -166,54 +166,36 @@
 
           BACKSPACE="guess"
         mode: "0644"
-      notify: 'Restart xrdp'
-
-    # - name: 'Настройка клавиатуры пользователя odmin'
-    #   ansible.builtin.copy:
-    #     dest: "/home/odmin/.config/xfce4/xfconf/xfce-perchannel-xml/keyboard-layout.xml"
-    #     content: |
-    #       <?xml version="1.0" encoding="UTF-8"?>
-
-    #       <channel name="keyboard-layout" version="1.0">
-    #         <property name="Default" type="empty">
-    #           <property name="XkbDisable" type="bool" value="false"/>
-    #           <property name="XkbLayout" type="string" value="us,ru"/>
-    #           <property name="XkbVariant" type="string" value=","/>
-    #           <property name="XkbOptions" type="empty">
-    #             <property name="Group" type="string" value="grp:alt_shift_toggle"/>
-    #           </property>
-    #         </property>
-    #       </channel>
-    #     mode: "0644"
+      notify: Restart xrdp
 
     # Замена языка ввода для окна регистрации (входа) xrdp:
-    - name: 'Проверка, что файл резервной копии файла km-00000419.ini уже существует'
+    - name: 'Проверка, что файл резервной копии файла km-00000419.ini уже существует:'
       ansible.builtin.stat:
-        path: "/etc/xrdp/km-00000419.ini.firstbkp"
+        path: /etc/xrdp/km-00000419.ini.firstbkp
       register: first_backup
 
     # Если резрвной копии файла нет, то изготовить:
-    - name: 'Резервная копия файла "/etc/xrdp/km-00000419.ini" -> "/etc/xrdp/km-00000419.ini.firstbkp"'
+    - name: 'Резервная копия файла "/etc/xrdp/km-00000419.ini" -> "/etc/xrdp/km-00000419.ini.firstbkp":'
       ansible.builtin.copy:
-        src: "/etc/xrdp/km-00000419.ini"
-        dest: "/etc/xrdp/km-00000419.ini.firstbkp"
+        src: /etc/xrdp/km-00000419.ini
+        dest: /etc/xrdp/km-00000419.ini.firstbkp
         remote_src: true
         mode: "0644"
       when: not first_backup.stat.exists
 
-    - name: 'Копирование файла "/etc/xrdp/km-00000409.ini" -> "/etc/xrdp/km-00000419.ini"'
+    - name: 'Копирование файла "/etc/xrdp/km-00000409.ini" -> "/etc/xrdp/km-00000419.ini":'
       ansible.builtin.copy:
-        src: "/etc/xrdp/km-00000409.ini"
-        dest: "/etc/xrdp/km-00000419.ini"
+        src: /etc/xrdp/km-00000409.ini
+        dest: /etc/xrdp/km-00000419.ini
         remote_src: true
         mode: "0644"
       when: not first_backup.stat.exists
-      notify: 'Restart xrdp'
-# Эксперимент с раскладкой на экране логина:
-# sudo localectl set-x11-keymap us,ru pc104 "" grp:alt_shift_toggle
+      notify: Restart xrdp
+      # TODO: Эксперимент с раскладкой на экране логина:
+      # sudo localectl set-x11-keymap us,ru pc104 "" grp:alt_shift_toggle
 
   handlers:
-    - name: 'Restart xrdp'
+    - name: Restart xrdp
       ansible.builtin.systemd:
         name: xrdp
         state: restarted
