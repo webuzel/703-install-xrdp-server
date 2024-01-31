@@ -1,5 +1,7 @@
 ---
 
+# v.2024-01-30
+
 - name: 'Подготовка временного списка компьютеров (вместо hosts):'
   hosts: localhost
   connection: local
@@ -140,16 +142,16 @@
         no_extra_spaces: true
         mode: "0644"
       with_items:
-        - { section: default_rdp_layouts, option: rdp_layout_us, value: 0x00000409 }
-        - { section: default_rdp_layouts, option: rdp_layout_ru, value: 0x00000419 }
+        - { section: default_rdp_layouts, option: rdp_layout_us, value: "0x00000409" }
+        - { section: default_rdp_layouts, option: rdp_layout_ru, value: "0x00000419" }
         - { section: rdp_keyboard_ru, option: keyboard_type, value: 4 }
         - { section: rdp_keyboard_ru, option: keyboard_subtype, value: 1 }
         - { section: rdp_keyboard_ru, option: model, value: pc105 }
-        - { section: rdp_keyboard_ru, option: options, value: grp:alt_shift_toggle }
+        - { section: rdp_keyboard_ru, option: options, value: "grp:alt_shift_toggle" }
         - { section: rdp_keyboard_ru, option: rdp_layouts, value: default_rdp_layouts }
         - { section: rdp_keyboard_ru, option: layouts_map, value: layouts_map_ru }
-        - { section: layouts_map_ru, option: rdp_layout_us, value: us,ru }
-        - { section: layouts_map_ru, option: rdp_layout_ru, value: us,ru }
+        - { section: layouts_map_ru, option: rdp_layout_us, value: "us,ru" }
+        - { section: layouts_map_ru, option: rdp_layout_ru, value: "us,ru" }
 
     - name: 'Настройка клавиатуры: Изменение "/etc/default/keyboard"'
       ansible.builtin.copy:
@@ -174,7 +176,7 @@
         path: /etc/xrdp/km-00000419.ini.firstbkp
       register: first_backup
 
-    # Если резрвной копии файла нет, то изготовить:
+    # Если резервной копии файла нет, то изготовить:
     - name: 'Резервная копия файла "/etc/xrdp/km-00000419.ini" -> "/etc/xrdp/km-00000419.ini.firstbkp":'
       ansible.builtin.copy:
         src: /etc/xrdp/km-00000419.ini
